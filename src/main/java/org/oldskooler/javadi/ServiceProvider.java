@@ -79,10 +79,12 @@ public class ServiceProvider implements Resolver {
             return resolveFromDescriptor(m.descriptor, this);
         }
 
+        // Removed below because we shouldn't try to create types that aren't registered in the service collection!
+
         // 3) Self-binding for concrete, instantiable classes
-        if (isConcrete(type)) {
-            return ConstructorFactory.createWithInjection(type, this, null);
-        }
+        // if (isConcrete(type)) {
+        //    return ConstructorFactory.createWithInjection(type, this, null);
+        // }
 
         // Nullable behavior: nothing found → return null (no exception here)
         return null;
