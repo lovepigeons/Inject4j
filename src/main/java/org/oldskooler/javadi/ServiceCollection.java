@@ -20,6 +20,35 @@ import java.util.function.Supplier;
 public class ServiceCollection {
     private final List<ServiceDescriptor<?>> serviceDescriptors = new ArrayList<>();
 
+    /**
+     * Validates that a given class type can be instantiated by the container.
+     * <p>
+     * This method enforces the following rules:
+     * <ul>
+     *   <li>The type must not be an interface.</li>
+     *   <li>The type must not be abstract.</li>
+     *   <li>The type must declare a public no-argument constructor.</li>
+     * </ul>
+     *
+     * @param <T>  The type being validated.
+     * @param type The class to validate.
+     * @throws IllegalArgumentException if the type is an interface, abstract,
+     *                                  lacks a no-arg constructor,
+     *                                  or has a no-arg constructor that is not public.
+     */
+    private static <T> void validateInstantiable(Class<T> type) {
+        if (type.isInterface()) {
+            throw new IllegalArgumentException(
+                "Cannot register service: " + type.getName() + " is an interface."
+            );
+        }
+        if (Modifier.isAbstract(type.getModifiers())) {
+            throw new IllegalArgumentException(
+                "Cannot register service: " + type.getName() + " is an abstract class."
+            );
+        }
+    }
+    
     // --- Singleton registrations ---
 
     /**
@@ -30,8 +59,10 @@ public class ServiceCollection {
      *
      * @param <T>  The concrete service type.
      * @param type The concrete class to register as both the service and implementation.
+     * @throws IllegalArgumentException if {@code type} is an interface or abstract class.
      */
     public <T> void addSingleton(Class<T> type) {
+        validateInstantiable(type);
         serviceDescriptors.add(ServiceDescriptor.implementedBy(type, type, ServiceLifetime.SINGLETON));
     }
 
@@ -68,8 +99,10 @@ public class ServiceCollection {
      * @param <I>              The implementation type.
      * @param serviceType      The service abstraction or interface.
      * @param implementationType The concrete class implementing the service.
+     * @throws IllegalArgumentException if {@code type} is an interface abstract class. 
      */
     public <T, I extends T> void addSingleton(Class<T> serviceType, Class<I> implementationType) {
+        validateInstantiable(implementationType);
         serviceDescriptors.add(ServiceDescriptor.implementedBy(serviceType, implementationType, ServiceLifetime.SINGLETON));
     }
 
@@ -95,8 +128,10 @@ public class ServiceCollection {
      *
      * @param <T>  The concrete service type.
      * @param type The concrete class to register as both the service and implementation.
+     * @throws IllegalArgumentException if {@code type} is an interface or abstract class.
      */
     public <T> void addScoped(Class<T> type) {
+        validateInstantiable(type);
         serviceDescriptors.add(ServiceDescriptor.implementedBy(type, type, ServiceLifetime.SCOPED));
     }
 
@@ -108,8 +143,10 @@ public class ServiceCollection {
      * @param <I>              The implementation type.
      * @param serviceType      The service abstraction or interface.
      * @param implementationType The concrete class implementing the service.
+     * @throws IllegalArgumentException if {@code type} is an interface abstract class. 
      */
     public <T, I extends T> void addScoped(Class<T> serviceType, Class<I> implementationType) {
+        validateInstantiable(implementationType);
         serviceDescriptors.add(ServiceDescriptor.implementedBy(serviceType, implementationType, ServiceLifetime.SCOPED));
     }
 
@@ -135,8 +172,10 @@ public class ServiceCollection {
      * @param <I>              The implementation type.
      * @param serviceType      The service abstraction or interface.
      * @param implementationType The concrete class implementing the service.
+     * @throws IllegalArgumentException if {@code type} is an interface abstract class.
      */
     public <T, I extends T> void addTransient(Class<T> serviceType, Class<I> implementationType) {
+        validateInstantiable(implementationType);
         serviceDescriptors.add(ServiceDescriptor.implementedBy(serviceType, implementationType, ServiceLifetime.TRANSIENT));
     }
 
@@ -148,8 +187,10 @@ public class ServiceCollection {
      *
      * @param <T>  The concrete service type.
      * @param type The concrete class to register as both the service and implementation.
+     * @throws IllegalArgumentException if {@code type} is an interface abstract class.
      */
     public <T> void addTransient(Class<T> type) {
+        validateInstantiable(type);
         serviceDescriptors.add(ServiceDescriptor.implementedBy(type, type, ServiceLifetime.TRANSIENT));
     }
 
