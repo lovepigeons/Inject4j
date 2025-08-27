@@ -51,33 +51,85 @@ public class Scope implements Resolver, AutoCloseable {
     }
 
     /**
-     * Resolves a service instance for the requested type.
+     * Resolves a service for the requested type using the provider's resolution rules.
      *
-     * <p>The resolution order is exact match → best assignable match → self-binding for concrete classes.</p>
+     * <p>Order: exact match → best assignable match → self-binding for concrete classes.</p>
      *
      * @param <T>  The requested service type.
-     * @param type The class object representing the service type.
-     * @return A resolved service instance.
-     * @throws IllegalArgumentException if no descriptor is found and the type is not concrete (self-bindable).
-     * @throws IllegalStateException    if multiple unrelated assignable candidates are found (ambiguous).
+     * @param type The class object of the requested type.
+     * @return The resolved instance, or {@code null} if no service can be resolved.
+     * @throws IllegalStateException if multiple unrelated assignable candidates are found,
+     *                               or if a SCOPED service is requested from the root provider.
      */
     @Override
     public <T> T getService(Class<T> type) {
-        // 1) Exact
+        // 1) Exact registration?
         ServiceDescriptor<T> exact = findDescriptorExact(type);
-        if (exact != null) return resolveFromDescriptor(exact);
-
-        // 2) Assignable
-        Match<T> m = findBestAssignableMatch(type);
-        if (m != null) return resolveFromDescriptor(m.descriptor);
-
-        // 3) Self-binding
-        if (isConcrete(type)) {
-            return ConstructorFactory.createWithInjection(type, this, null);
+        if (exact != null) {
+            return resolveFromDescriptor(exact);
         }
 
-        throw new IllegalArgumentException("No service registered for: " + type.getName());
+        // 2) Assignable registration?
+        Match<T> m = findBestAssignableMatch(type);
+        if (m != null) {
+            return resolveFromDescriptor(m.descriptor);
+        }
+
+        // Removed below because we shouldn't try to create types that aren't registered in the service collection!
+
+        // 3) Self-binding for concrete, instantiable classes
+        // if (isConcrete(type)) {
+        //    return ConstructorFactory.createWithInjection(type, this, null);
+        // }
+
+        // Nullable behavior: nothing found → return null (no exception here)
+        return null;
     }
+
+    /**
+     * Resolves a service or throws if it cannot be found.
+     *
+     * @param <T>  The requested service type.
+     * @param type The class object of the requested type.
+     * @return The resolved instance (never {@code null}).
+     * @throws ServiceNotFoundException if no service can be resolved for {@code type}.
+     * @throws IllegalStateException    if multiple unrelated assignable candidates are found,
+     *                                  or if a SCOPED service is requested from the root provider.
+     */
+    public <T> T getRequiredService(Class<T> type) {
+        T instance = getService(type);
+        if (instance != null) return instance;
+        throw new ServiceNotFoundException(type);
+    }
+
+    /**
+     * Creates an instance of the given {@code type}, filling its constructor parameters
+     * from this {@link Scope}.
+     * <p>
+     * Works the same as {@link ServiceProvider#createInstance(Class, Object...)} but
+     * resolves dependencies using the current scope, so scoped lifetimes are respected.
+     * <p>
+     * Behavior is modeled after .NET's
+     * {@code ActivatorUtilities.CreateInstance}:
+     * <ul>
+     *   <li>Any {@code explicitArgs} are matched first by assignable type.</li>
+     *   <li>Remaining constructor parameters are resolved from this scope.</li>
+     *   <li>The "greediest" satisfiable constructor is chosen.</li>
+     *   <li>If no constructor can be fully satisfied, a {@link ServiceNotFoundException} is thrown.</li>
+     * </ul>
+     *
+     * @param type the concrete class to instantiate (does not need to be registered as a service)
+     * @param explicitArgs optional arguments to bind to constructor parameters before falling back to DI
+     * @param <T> the requested type
+     * @return a new instance of {@code type}, with dependencies injected from this scope
+     * @throws ServiceNotFoundException if no constructor can be satisfied
+     */
+    public <T> T createInstance(Class<T> type, Object... explicitArgs) {
+        return Activator.createInstance(new Activator.ServiceResolver() {
+            @Override public <U> U getService(Class<U> t) { return Scope.this.getService(t); }
+        }, type, explicitArgs);
+    }
+
 
     /**
      * Determines whether this scope can resolve the requested type.

@@ -86,23 +86,17 @@ public class FooServiceImpl implements FooService {
 ### 2. Register services
 
 ```java
-import org.oldskooler.javadi.*;
+ServiceCollection services = new ServiceCollection();
 
-public class Main {
-    public static void main(String[] args) {
-        ServiceCollection services = new ServiceCollection();
-        
-        // Register FooService as a singleton
-        services.addSingleton(FooService.class, FooServiceImpl.class);
-        
-        // Build provider
-        ServiceProvider provider = services.buildServiceProvider();
-        
-        // Resolve and use service
-        FooService foo = provider.getService(FooService.class);
-        foo.doSomething(); // prints "Hello from Foo!"
-    }
-}
+// Register FooService as a singleton
+services.addSingleton(FooService.class, FooServiceImpl.class);
+
+// Build provider
+ServiceProvider provider = services.buildServiceProvider();
+
+// Resolve and use service
+FooService foo = provider.getService(FooService.class);
+foo.doSomething(); // prints "Hello from Foo!"
 ```
 
 ## Lifetimes
@@ -214,17 +208,6 @@ services.addTransient(MyService.class);
 
 ## Resolving Services
 
-By default, you resolve services from a `ServiceProvider` (or a `Scope`) using `getService`:
-
-```java
-FooService foo = provider.getService(FooService.class);
-if (foo != null) {
-    foo.doSomething();
-}
-```
-
-## getService vs getRequiredService
-
 ### getService(type)
 - Returns the service instance or `null` if none can be resolved
 - Useful when the service is optional
@@ -240,4 +223,67 @@ FooService optionalFoo = provider.getService(FooService.class);
 // Strict resolution
 FooService foo = provider.getRequiredService(FooService.class);
 foo.doSomething();
+```
+
+## Simple Activator Example
+
+Use `createInstance` to instantiate a class that is **not registered** in the container,  
+while still having its constructor arguments filled from DI.  
+This mirrors .NET's `ActivatorUtilities.CreateInstance`.
+
+---
+
+### Setup
+
+```java
+ServiceCollection services = new ServiceCollection();
+services.addSingleton(Logger.class, () -> Logger.getLogger("demo"));
+services.addTransient(MessageService.class, ConsoleMessageService.class);
+
+ServiceProvider provider = services.buildServiceProvider();
+
+// Mix explicit arg + DI
+ReportController custom = provider.createInstance(ReportController.class, "Sales");
+custom.run();
+```
+
+**Output**
+
+```
+INFO: Generating report with service Console Message Service: Sales
+```
+
+### Service Interface and Implementation
+
+```java
+public interface MessageService {
+    String getName();
+}
+
+public class ConsoleMessageService implements MessageService {
+    @Override
+    public String getName() {
+        return "Console Message Service";
+    }
+}
+```
+
+### The Unregistered Class
+
+```java
+public class ReportController {
+    private final Logger log;
+    private final MessageService service;
+    private final String name;
+
+    public ReportController(Logger log, MessageService service, String name) {
+        this.log = log;
+        this.service = service;
+        this.name = name != null ? name : "Default";
+    }
+
+    public void run() {
+        log.info("Generating report with service " + service.getName() + ": " + name);
+    }
+}
 ```

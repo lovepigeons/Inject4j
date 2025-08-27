@@ -108,6 +108,31 @@ public class ServiceProvider implements Resolver {
     }
 
     /**
+     * Creates an instance of the given {@code type}, filling its constructor parameters
+     * from this {@link ServiceProvider}.
+     * <p>
+     * Behavior is modeled after .NET's
+     * {@code ActivatorUtilities.CreateInstance}:
+     * <ul>
+     *   <li>Any {@code explicitArgs} you pass are matched first by assignable type.</li>
+     *   <li>Remaining constructor parameters are resolved from the service provider.</li>
+     *   <li>The "greediest" satisfiable constructor is chosen.</li>
+     *   <li>If no constructor can be fully satisfied, a {@link ServiceNotFoundException} is thrown.</li>
+     * </ul>
+     *
+     * @param type the concrete class to instantiate (does not need to be registered as a service)
+     * @param explicitArgs optional arguments to bind to constructor parameters before falling back to DI
+     * @param <T> the requested type
+     * @return a new instance of {@code type}, with dependencies injected
+     * @throws ServiceNotFoundException if no constructor can be satisfied
+     */
+    public <T> T createInstance(Class<T> type, Object... explicitArgs) {
+        return Activator.createInstance(new Activator.ServiceResolver() {
+            @Override public <U> U getService(Class<U> t) { return ServiceProvider.this.getService(t); }
+        }, type, explicitArgs);
+    }
+
+    /**
      * Indicates whether the provider could resolve the requested type if asked.
      *
      * <p>Returns {@code true} if an exact descriptor exists, a non-ambiguous assignable match exists,
