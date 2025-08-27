@@ -1,0 +1,20 @@
+// build.gradle (Groovy DSL)
+plugins {
+    id 'java'
+}
+
+group = 'org.oldskooler.javadi'
+version = '1.0.0'
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // your deps
+}
