@@ -26,7 +26,7 @@ import java.util.*;
  *   <li>Exact descriptor match for the requested type.</li>
  *   <li>Assignable match: choose the most specific produced type; throw if ambiguous.</li>
  *   <li>Self-binding: if the requested type is concrete (not abstract/interface), construct it via
- *       {@link ConstructorFactory#createWithInjection(Class, Resolver, String)}.</li>
+ *       {@link ConstructorFactory#createWithInjection(Class, Resolver, Deque)}.</li>
  * </ol>
  */
 public class ServiceProvider implements Resolver {
