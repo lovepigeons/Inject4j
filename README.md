@@ -35,7 +35,7 @@ Then add the dependency:
 
 ```groovy
 dependencies {
-    implementation 'com.github.Quackster:java-di:v1.0.2'
+    implementation 'com.github.Quackster:java-di:v1.0.3'
 }
 ```
 
@@ -59,7 +59,7 @@ Then add the dependency:
     <dependency>
         <groupId>com.github.Quackster</groupId>
         <artifactId>java-di</artifactId>
-        <version>v1.0.2</version>
+        <version>v1.0.3</version>
     </dependency>
 </dependencies>
 ```
