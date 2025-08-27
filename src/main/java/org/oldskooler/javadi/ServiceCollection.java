@@ -1,5 +1,6 @@
 package org.oldskooler.javadi;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
