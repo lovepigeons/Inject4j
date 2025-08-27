@@ -5,7 +5,7 @@ It provides a simple API for registering services with different lifetimes (sing
 
 **Built and tested against the latest JDK LTS (currently Java 21).**
 
-[![](https://jitpack.io/v/Quackster/java-di.svg)](https://jitpack.io/Quackster/java-di)
+[![](https://jitpack.io/v/Quackster/java-di.svg)](https://jitpack.io/#Quackster/java-di)
 
 ---
 
@@ -23,7 +23,7 @@ It provides a simple API for registering services with different lifetimes (sing
 
 ### Gradle
 
-Add the [JitPack](https://jitpack.io/Quackster/java-di) repository:
+Add the [JitPack](https://jitpack.io/#Quackster/java-di) repository:
 
 ```groovy
 repositories {
@@ -35,8 +35,33 @@ Then add the dependency:
 
 ```groovy
 dependencies {
-    implementation 'org.oldskooler.javadi:java-di:v1.0.0'
+    implementation 'com.github.Quackster:java-di:v1.0.1'
 }
+```
+
+### Maven
+
+Add the [JitPack](https://jitpack.io/#Quackster/java-di) repository:
+
+```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+```
+
+Then add the dependency:
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>com.github.Quackster</groupId>
+        <artifactId>java-di</artifactId>
+        <version>v1.0.1</version>
+    </dependency>
+</dependencies>
 ```
 
 ## Quick Start
@@ -129,8 +154,23 @@ BarService bar = provider.getService(BarService.class);
 bar.work(); // uses injected FooService
 ```
 
-## Roadmap
+## Service Registration Shortcuts
 
-- Add support for optional dependencies
-- Improve error messages for resolution failures
-- Support for qualifiers / named registrations
+In addition to registering an abstraction with a separate implementation type:
+
+```java
+services.addSingleton(FooService.class, FooServiceImpl.class);
+```
+
+You can also register a concrete class as both the service and implementation using convenient one-argument overloads:
+
+```java
+// Registers MyService as a singleton, using itself as the implementation
+services.addSingleton(MyService.class);
+
+// Registers MyService as scoped (new instance per scope)
+services.addScoped(MyService.class);
+
+// Registers MyService as transient (new instance every time)
+services.addTransient(MyService.class);
+```

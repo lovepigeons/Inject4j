@@ -23,6 +23,19 @@ public class ServiceCollection {
     // --- Singleton registrations ---
 
     /**
+     * Registers a singleton where the service type is the same as the implementation type.
+     * The container will construct the implementation once and reuse it for all requests.
+     *
+     * <p>Equivalent to calling {@code addSingleton(type, type)}.</p>
+     *
+     * @param <T>  The concrete service type.
+     * @param type The concrete class to register as both the service and implementation.
+     */
+    public <T> void addSingleton(Class<T> type) {
+        serviceDescriptors.add(ServiceDescriptor.implementedBy(type, type, ServiceLifetime.SINGLETON));
+    }
+
+    /**
      * Registers a specific pre-created instance as a singleton for the given service type.
      * The same instance will always be returned when this service is requested.
      *
@@ -75,6 +88,19 @@ public class ServiceCollection {
     }
 
     /**
+     * Registers a scoped service where the service type is the same as the implementation type.
+     * A new instance is created per scope (e.g., per web request).
+     *
+     * <p>Equivalent to calling {@code addScoped(type, type)}.</p>
+     *
+     * @param <T>  The concrete service type.
+     * @param type The concrete class to register as both the service and implementation.
+     */
+    public <T> void addScoped(Class<T> type) {
+        serviceDescriptors.add(ServiceDescriptor.implementedBy(type, type, ServiceLifetime.SCOPED));
+    }
+
+    /**
      * Registers a scoped service by mapping an abstraction to an implementation type.
      * A new instance is created per scope.
      *
@@ -112,6 +138,19 @@ public class ServiceCollection {
      */
     public <T, I extends T> void addTransient(Class<T> serviceType, Class<I> implementationType) {
         serviceDescriptors.add(ServiceDescriptor.implementedBy(serviceType, implementationType, ServiceLifetime.TRANSIENT));
+    }
+
+    /**
+     * Registers a transient service where the service type is the same as the implementation type.
+     * A new instance is created each time the service is requested.
+     *
+     * <p>Equivalent to calling {@code addTransient(type, type)}.</p>
+     *
+     * @param <T>  The concrete service type.
+     * @param type The concrete class to register as both the service and implementation.
+     */
+    public <T> void addTransient(Class<T> type) {
+        serviceDescriptors.add(ServiceDescriptor.implementedBy(type, type, ServiceLifetime.TRANSIENT));
     }
 
     /**
