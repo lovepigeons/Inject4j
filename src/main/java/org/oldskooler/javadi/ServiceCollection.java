@@ -28,7 +28,6 @@ public class ServiceCollection {
      * <ul>
      *   <li>The type must not be an interface.</li>
      *   <li>The type must not be abstract.</li>
-     *   <li>The type must declare a public no-argument constructor.</li>
      * </ul>
      *
      * @param <T>  The type being validated.
