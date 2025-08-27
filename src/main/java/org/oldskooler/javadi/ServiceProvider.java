@@ -2,6 +2,7 @@ package org.oldskooler.javadi;
 
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Root service provider that resolves services from a set of {@link ServiceDescriptor}
@@ -33,7 +34,7 @@ public class ServiceProvider implements Resolver {
     /** All registered descriptors known to this provider. */
     private final List<ServiceDescriptor<?>> descriptors;
     /** Application-wide cache of SINGLETON instances, shared with child scopes. */
-    private final Map<Class<?>, Object> singletonCache = new HashMap<>();
+    private final Map<Class<?>, Object> singletonCache = new ConcurrentHashMap<>();
 
     /**
      * Creates a new root provider.

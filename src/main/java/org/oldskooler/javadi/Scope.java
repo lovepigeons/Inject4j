@@ -2,6 +2,7 @@ package org.oldskooler.javadi;
 
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A resolution scope that can construct and cache services according to their {@link ServiceLifetime}.
@@ -36,7 +37,7 @@ public class Scope implements Resolver, AutoCloseable {
     /** Cache for SINGLETON instances shared across all scopes created by the root provider. */
     private final Map<Class<?>, Object> singletonCache;  // shared with root
     /** Cache for SCOPED instances owned by this scope. Cleared and closed on {@link #close()}. */
-    private final Map<Class<?>, Object> scopedCache = new HashMap<>();
+    private final Map<Class<?>, Object> scopedCache = new ConcurrentHashMap<>();
 
     /**
      * Creates a new scope.
