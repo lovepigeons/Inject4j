@@ -3,6 +3,8 @@
 A lightweight dependency injection (DI) container for Java.  
 It provides a simple API for registering services with different lifetimes (singleton, scoped, transient) and resolving them with constructor injection.
 
+**Built and tested against the latest JDK LTS (currently Java 21).**
+
 [![](https://jitpack.io/v/Quackster/java-di.svg)](https://jitpack.io/Quackster/java-di)
 
 ---
