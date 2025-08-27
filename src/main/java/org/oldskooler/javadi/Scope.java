@@ -66,13 +66,13 @@ public class Scope implements Resolver, AutoCloseable {
         // 1) Exact registration?
         ServiceDescriptor<T> exact = findDescriptorExact(type);
         if (exact != null) {
-            return resolveFromDescriptor(exact);
+            return resolveFromDescriptor(exact, this);
         }
 
         // 2) Assignable registration?
         Match<T> m = findBestAssignableMatch(type);
         if (m != null) {
-            return resolveFromDescriptor(m.descriptor);
+            return resolveFromDescriptor(m.descriptor, this);
         }
 
         // Removed below because we shouldn't try to create types that aren't registered in the service collection!
@@ -254,45 +254,49 @@ public class Scope implements Resolver, AutoCloseable {
     }
 
     /**
-     * Resolves an instance from a descriptor, applying lifetime caching rules.
+     * Resolves an instance from a descriptor according to its lifetime, using the given resolver
+     * (typically {@code this}) for constructor injection.
      *
-     * @param <T> The service type.
-     * @param d   The descriptor.
-     * @return The resolved instance (possibly retrieved from cache).
-     * @throws IllegalStateException if the lifetime is unknown.
+     * @param <T>      The service type.
+     * @param d        The descriptor.
+     * @param resolver The resolver passed into constructor injection for dependencies.
+     * @return The resolved instance.
+     * @throws IllegalStateException if a SCOPED service is requested from the root provider,
+     *                               or if the lifetime is unknown.
      */
     @SuppressWarnings("unchecked")
-    private <T> T resolveFromDescriptor(ServiceDescriptor<T> d) {
+    private <T> T resolveFromDescriptor(ServiceDescriptor<T> d, Resolver resolver) {
         switch (d.lifetime) {
             case SINGLETON:
-                return (T) singletonCache.computeIfAbsent(d.serviceType, x -> createFromDescriptor(d));
-            case SCOPED:
-                return (T) scopedCache.computeIfAbsent(d.serviceType, x -> createFromDescriptor(d));
+                return (T) singletonCache.computeIfAbsent(d.serviceType, x -> createFromDescriptor(d, resolver));
             case TRANSIENT:
-                return createFromDescriptor(d);
+                return createFromDescriptor(d, resolver);
+            case SCOPED:
+                throw new IllegalStateException("Scoped service requested from root provider: " + d.serviceType);
             default:
                 throw new IllegalStateException("Unknown lifetime");
         }
     }
 
     /**
-     * Creates an instance based on the descriptor's construction strategy:
+     * Creates an instance according to the descriptor's construction strategy:
      * <ul>
      *   <li>If an {@code instance} is specified, returns it as-is.</li>
      *   <li>If a {@code supplier} is specified, invokes it to produce a new instance.</li>
-     *   <li>Else, uses the {@code implType} and {@link ConstructorFactory} to construct the instance.</li>
+     *   <li>Otherwise, constructs the {@code implType} via {@link ConstructorFactory} using the provided resolver.</li>
      * </ul>
      *
-     * @param <T> The service type.
-     * @param d   The descriptor.
-     * @return A newly created instance (not cached here).
+     * @param <T>      The service type.
+     * @param d        The descriptor.
+     * @param resolver The resolver for dependency injection during construction.
+     * @return A newly created instance (not cached here unless SINGLETON handling applies).
      */
-    private static <T> T createFromDescriptor(ServiceDescriptor<T> d) {
+    private static <T> T createFromDescriptor(ServiceDescriptor<T> d, Resolver resolver) {
         if (d.instance != null) return d.instance;
         if (d.supplier != null) return d.supplier.get();
         @SuppressWarnings("unchecked")
         Class<T> impl = (Class<T>) d.implType;
-        return ConstructorFactory.createWithInjection(impl, (Resolver) null, null); // will not use resolver here
+        return ConstructorFactory.createWithInjection(impl, resolver, null);
     }
 
     /**
