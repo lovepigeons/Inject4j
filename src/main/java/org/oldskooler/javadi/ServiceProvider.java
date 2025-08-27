@@ -61,9 +61,9 @@ public class ServiceProvider implements Resolver {
      *
      * @param <T>  The requested service type.
      * @param type The class object of the requested type.
-     * @return A resolved instance.
-     * @throws IllegalArgumentException if no descriptor is found and the type is not self-bindable.
-     * @throws IllegalStateException    if multiple unrelated assignable candidates are found.
+     * @return The resolved instance, or {@code null} if no service can be resolved.
+     * @throws IllegalStateException if multiple unrelated assignable candidates are found,
+     *                               or if a SCOPED service is requested from the root provider.
      */
     @Override
     public <T> T getService(Class<T> type) {
@@ -73,7 +73,7 @@ public class ServiceProvider implements Resolver {
             return resolveFromDescriptor(exact, this);
         }
 
-        // 2) Assignable registration? (e.g., Clock->SystemClock satisfies SystemClock param)
+        // 2) Assignable registration?
         Match<T> m = findBestAssignableMatch(type);
         if (m != null) {
             return resolveFromDescriptor(m.descriptor, this);
@@ -84,7 +84,24 @@ public class ServiceProvider implements Resolver {
             return ConstructorFactory.createWithInjection(type, this, null);
         }
 
-        throw new IllegalArgumentException("No service registered for: " + type.getName());
+        // Nullable behavior: nothing found → return null (no exception here)
+        return null;
+    }
+
+    /**
+     * Resolves a service or throws if it cannot be found.
+     *
+     * @param <T>  The requested service type.
+     * @param type The class object of the requested type.
+     * @return The resolved instance (never {@code null}).
+     * @throws ServiceNotFoundException if no service can be resolved for {@code type}.
+     * @throws IllegalStateException    if multiple unrelated assignable candidates are found,
+     *                                  or if a SCOPED service is requested from the root provider.
+     */
+    public <T> T getRequiredService(Class<T> type) {
+        T instance = getService(type);
+        if (instance != null) return instance;
+        throw new ServiceNotFoundException(type);
     }
 
     /**

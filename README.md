@@ -35,7 +35,7 @@ Then add the dependency:
 
 ```groovy
 dependencies {
-    implementation 'com.github.Quackster:java-di:v1.0.1'
+    implementation 'com.github.Quackster:java-di:v1.0.2'
 }
 ```
 
@@ -59,7 +59,7 @@ Then add the dependency:
     <dependency>
         <groupId>com.github.Quackster</groupId>
         <artifactId>java-di</artifactId>
-        <version>v1.0.1</version>
+        <version>v1.0.2</version>
     </dependency>
 </dependencies>
 ```
@@ -173,4 +173,34 @@ services.addScoped(MyService.class);
 
 // Registers MyService as transient (new instance every time)
 services.addTransient(MyService.class);
+```
+
+## Resolving Services
+
+By default, you resolve services from a `ServiceProvider` (or a `Scope`) using `getService`:
+
+```java
+FooService foo = provider.getService(FooService.class);
+if (foo != null) {
+    foo.doSomething();
+}
+```
+
+## getService vs getRequiredService
+
+### getService(type)
+- Returns the service instance or `null` if none can be resolved
+- Useful when the service is optional
+
+### getRequiredService(type)
+- Returns the service instance or throws `ServiceNotFoundException` if not found
+- Use this when the service is mandatory and missing bindings should be treated as programming errors
+
+```java
+// Nullable resolution
+FooService optionalFoo = provider.getService(FooService.class);
+
+// Strict resolution
+FooService foo = provider.getRequiredService(FooService.class);
+foo.doSomething();
 ```
