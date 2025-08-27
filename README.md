@@ -1,7 +1,9 @@
 # java-di
 
-A lightweight dependency injection (DI) container for Java.  
-It provides a simple API for registering services with different lifetimes (singleton, scoped, transient) and resolving them with constructor injection.
+A small, lightweight and simple dependency injection (DI) container for Java. It’s designed to work almost the same way as Microsoft’s [ServiceCollection](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.dependencyinjection.servicecollection) implementation., so if you’ve used DI in .NET it should feel very familiar.
+
+With it, you can register services as singletons, scoped, or transient, and then resolve them using constructor injection.
+
 
 **Built and tested against the latest JDK LTS (currently Java 21).**
 
