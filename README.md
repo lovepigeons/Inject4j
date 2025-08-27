@@ -123,36 +123,71 @@ try (Scope scope = provider.createScope()) {
 ### Transient
 Always creates a fresh instance.
 
-## Constructor Injection
+## Constructor Injection Example
 
 Dependencies are automatically injected via constructors:
 
 ```java
-public class BarService {
-    private final FooService foo;
+public class SmtpEmailService implements EmailService {
+    private final DatabaseService database;
     
-    public BarService(FooService foo) {
-        this.foo = foo;
+    public SmtpEmailService(DatabaseService database) {
+        this.database = database;
     }
     
-    public void work() {
-        foo.doSomething();
+    @Override
+    public void sendNotification(String message) {
+        // Use the injected database service
+        String user = database.getUserEmail();
+        System.out.println("Sending email to " + user + ": " + message);
+    }
+}
+```
+Our DatabaseService implementation:
+
+```java
+public class MySqlDatabaseService implements DatabaseService {
+    @Override
+    public String getUserEmail() {
+        return "user@example.com";
     }
 }
 ```
 
-Register it:
+Register the services:
 
 ```java
-services.addTransient(BarService.class, BarService.class);
+services.addSingleton(DatabaseService.class, MySqlDatabaseService.class);
+services.addTransient(EmailService.class, SmtpEmailService.class);
 ```
 
-Resolve it:
+Resolve and use:
 
 ```java
-BarService bar = provider.getService(BarService.class);
-bar.work(); // uses injected FooService
+EmailService emailService = provider.getService(EmailService.class);
+emailService.sendNotification("Welcome!"); 
+// Output: Sending email to user@example.com: Welcome!
 ```
+
+The `SmtpEmailService` constructor automatically receives the registered `DatabaseService` implementation when resolved from the container.
+
+## Injecting Interface vs Concrete Types
+
+You can inject either the interface or the concrete implementation in your constructor:
+
+```java
+// Option 1: Inject the interface (recommended)
+public SmtpEmailService(DatabaseService database) {
+    this.database = database;
+}
+
+// Option 2: Inject the concrete implementation directly
+public SmtpEmailService(MySqlDatabaseService database) {
+    this.database = database;
+}
+```
+
+**Best Practice:** Depend on the interface (`DatabaseService`) rather than the concrete type (`MySqlDatabaseService`) to maintain loose coupling and make your code more testable and flexible.
 
 ## Service Registration Shortcuts
 
