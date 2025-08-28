@@ -310,7 +310,8 @@ public class Scope implements Resolver, AutoCloseable {
     @Override
     public void close() {
         for (Object o : scopedCache.values()) {
-            if (o instanceof AutoCloseable c) {
+            if (o instanceof AutoCloseable) {
+                AutoCloseable c = (AutoCloseable) o;
                 try { c.close(); } catch (Exception ignored) {}
             }
         }
