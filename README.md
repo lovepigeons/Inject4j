@@ -1,13 +1,37 @@
 # java-di
 
-A small, lightweight and simple dependency injection (DI) container for Java. It’s designed to work almost the same way as Microsoft’s [ServiceCollection](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.dependencyinjection.servicecollection) implementation., so if you’ve used DI in .NET it should feel very familiar.
+A small, lightweight and simple dependency injection (DI) container for Java. It's designed to work almost the same way as Microsoft's [ServiceCollection](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.dependencyinjection.servicecollection) implementation., so if you've used DI in .NET it should feel very familiar.
 
 With it, you can register services as singletons, scoped, or transient, and then resolve them using constructor injection.
-
 
 **Built and tested against the latest JDK LTS (currently Java 21).**
 
 [![](https://jitpack.io/v/Quackster/java-di.svg)](https://jitpack.io/#Quackster/java-di)
+
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+  - [Gradle](#gradle)
+  - [Maven](#maven)
+- [Quick Start](#quick-start)
+  - [1. Define services](#1-define-services)
+  - [2. Register services](#2-register-services)
+- [Service Lifetimes](#service-lifetimes)
+  - [Singleton](#singleton)
+  - [Scoped](#scoped)
+  - [Transient](#transient)
+- [Constructor Injection Example](#constructor-injection-example)
+- [Injecting Interface vs Concrete Types](#injecting-interface-vs-concrete-types)
+- [Service Registration Shortcuts](#service-registration-shortcuts)
+- [Resolving Services](#resolving-services)
+- [Simple Activator Example](#simple-activator-example)
+  - [Setup](#setup)
+  - [Service Interface and Implementation](#service-interface-and-implementation)
+  - [The Unregistered Class](#the-unregistered-class)
+- [FAQ](#faq)
 
 ---
 
@@ -99,7 +123,7 @@ FooService foo = provider.getService(FooService.class);
 foo.doSomething(); // prints "Hello from Foo!"
 ```
 
-## Lifetimes
+## Service Lifetimes
 
 ### Singleton
 Same instance reused across all resolutions (application-wide).
@@ -287,3 +311,34 @@ public class ReportController {
     }
 }
 ```
+
+---
+
+## FAQ
+
+### Q: What Java versions are supported?
+**A:** The library is built and tested against the latest JDK LTS (currently Java 21).
+
+### Q: How does this compare to Spring's dependency injection?
+**A:** This is a much lighter alternative focused on simplicity. While Spring offers extensive features and integrations, java-di provides just the core DI functionality with a clean, easy-to-use API similar to .NET's ServiceCollection.
+
+### Q: Can I register factory methods for services?
+**A:** Yes, you can use lambda expressions when registering services. For example: `services.addSingleton(Logger.class, () -> Logger.getLogger("demo"));`
+
+### Q: What happens if I try to resolve a service that isn't registered?
+**A:** With `getService()`, you'll get `null`. With `getRequiredService()`, you'll get a `ServiceNotFoundException`. However, if you try to resolve a concrete class that isn't registered, the container can automatically construct it using self-binding.
+
+### Q: How do scoped services work in practice?
+**A:** Scoped services are perfect for web applications where you want one instance per HTTP request. Create a new scope for each request, resolve services within that scope, and dispose the scope when the request completes.
+
+### Q: Can services implement AutoCloseable?
+**A:** Yes! Scoped services that implement `AutoCloseable` will be automatically disposed when their scope is closed using the try-with-resources pattern.
+
+### Q: What's the difference between this and other Java DI frameworks?
+**A:** This library is specifically designed to mirror .NET's ServiceCollection API, making it familiar for developers coming from the .NET ecosystem. It's also much more lightweight than frameworks like Spring or Guice.
+
+### Q: Can I mix explicit constructor arguments with dependency injection?
+**A:** Yes! Use `createInstance()` to provide some constructor arguments explicitly while having others resolved from the DI container.
+
+### Q: Is constructor injection the only supported injection method?
+**A:** Yes, currently the library only supports constructor injection, which is generally considered the best practice for dependency injection as it ensures all dependencies are provided at object creation time.
