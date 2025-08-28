@@ -1,4 +1,4 @@
-package org.oldskooler.javadi;
+package org.oldskooler.inject4j;
 
 import java.util.function.Supplier;
 

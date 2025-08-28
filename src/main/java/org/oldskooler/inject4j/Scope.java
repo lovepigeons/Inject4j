@@ -1,58 +1,53 @@
-package org.oldskooler.javadi;
+package org.oldskooler.inject4j;
 
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Root service provider that resolves services from a set of {@link ServiceDescriptor}
- * registrations and manages a shared singleton cache.
- *
- * <p><strong>Responsibilities</strong></p>
+ * A resolution scope that can construct and cache services according to their {@link ServiceLifetime}.
+ * <p>
+ * A {@code Scope} provides:
+ * </p>
  * <ul>
- *   <li>Resolve services via exact match, best assignable match, or self-binding for concrete classes.</li>
- *   <li>Own and manage the application-wide <em>singleton</em> cache.</li>
- *   <li>Create child {@link Scope scopes} for per-scope (e.g., per-request) resolution.</li>
+ *   <li><b>Singleton</b> caching shared with the root provider (via {@code singletonCache}).</li>
+ *   <li><b>Scoped</b> caching local to this scope (cleared on {@link #close()}).</li>
+ *   <li><b>Transient</b> services created every time.</li>
  * </ul>
  *
- * <p><strong>Lifetimes</strong></p>
- * <ul>
- *   <li><b>SINGLETON</b>: Cached here in {@code singletonCache} and reused across all resolutions/scopes.</li>
- *   <li><b>SCOPED</b>: Not resolvable at the root provider; requesting a scoped service here is an error.</li>
- *   <li><b>TRANSIENT</b>: Newly created on each request.</li>
- * </ul>
- *
- * <p><strong>Resolution order</strong></p>
+ * <p>
+ * Resolution proceeds in three steps:
+ * </p>
  * <ol>
- *   <li>Exact descriptor match for the requested type.</li>
- *   <li>Assignable match: choose the most specific produced type; throw if ambiguous.</li>
- *   <li>Self-binding: if the requested type is concrete (not abstract/interface), construct it via
- *       {@link ConstructorFactory#createWithInjection(Class, Resolver, Deque)}.</li>
+ *   <li><b>Exact</b> descriptor lookup for the requested service type.</li>
+ *   <li><b>Assignable</b> match: find the most specific descriptor whose produced type is assignable to the
+ *       requested type. If multiple unrelated types match, an ambiguity error is thrown.</li>
+ *   <li><b>Self-binding</b>: if the requested type is concrete (not abstract, not an interface), attempt to
+ *       construct it directly via {@link ConstructorFactory#createWithInjection(Class, Resolver, Deque)}.</li>
  * </ol>
+ *
+ * <p>
+ * Instances that implement {@link AutoCloseable} and are scoped-cached will be closed when the scope is
+ * {@linkplain #close() closed}. Singletons are <em>not</em> owned by the scope and are not closed here.
+ * </p>
  */
-public class ServiceProvider implements Resolver {
-    /** All registered descriptors known to this provider. */
+public class Scope implements Resolver, AutoCloseable {
+    /** All known service descriptors, typically from the root provider. */
     private final List<ServiceDescriptor<?>> descriptors;
-    /** Application-wide cache of SINGLETON instances, shared with child scopes. */
-    private final Map<Class<?>, Object> singletonCache = new ConcurrentHashMap<>();
+    /** Cache for SINGLETON instances shared across all scopes created by the root provider. */
+    private final Map<Class<?>, Object> singletonCache;  // shared with root
+    /** Cache for SCOPED instances owned by this scope. Cleared and closed on {@link #close()}. */
+    private final Map<Class<?>, Object> scopedCache = new ConcurrentHashMap<>();
 
     /**
-     * Creates a new root provider.
+     * Creates a new scope.
      *
-     * @param descriptors The service descriptors available for resolution.
+     * @param descriptors     The registered service descriptors to consider during resolution.
+     * @param singletonCache  A shared cache for SINGLETON services (owned by the root provider).
      */
-    public ServiceProvider(List<ServiceDescriptor<?>> descriptors) {
+    public Scope(List<ServiceDescriptor<?>> descriptors, Map<Class<?>, Object> singletonCache) {
         this.descriptors = descriptors;
-    }
-
-    /**
-     * Creates a new {@link Scope} that shares this provider's singleton cache,
-     * but maintains its own scoped cache and disposal semantics.
-     *
-     * @return A new {@link Scope} for scoped resolutions.
-     */
-    public Scope createScope() {
-        return new Scope(descriptors, singletonCache);
+        this.singletonCache = singletonCache;
     }
 
     /**
@@ -109,13 +104,16 @@ public class ServiceProvider implements Resolver {
 
     /**
      * Creates an instance of the given {@code type}, filling its constructor parameters
-     * from this {@link ServiceProvider}.
+     * from this {@link Scope}.
+     * <p>
+     * Works the same as {@link ServiceProvider#createInstance(Class, Object...)} but
+     * resolves dependencies using the current scope, so scoped lifetimes are respected.
      * <p>
      * Behavior is modeled after .NET's
      * {@code ActivatorUtilities.CreateInstance}:
      * <ul>
-     *   <li>Any {@code explicitArgs} you pass are matched first by assignable type.</li>
-     *   <li>Remaining constructor parameters are resolved from the service provider.</li>
+     *   <li>Any {@code explicitArgs} are matched first by assignable type.</li>
+     *   <li>Remaining constructor parameters are resolved from this scope.</li>
      *   <li>The "greediest" satisfiable constructor is chosen.</li>
      *   <li>If no constructor can be fully satisfied, a {@link ServiceNotFoundException} is thrown.</li>
      * </ul>
@@ -123,29 +121,30 @@ public class ServiceProvider implements Resolver {
      * @param type the concrete class to instantiate (does not need to be registered as a service)
      * @param explicitArgs optional arguments to bind to constructor parameters before falling back to DI
      * @param <T> the requested type
-     * @return a new instance of {@code type}, with dependencies injected
+     * @return a new instance of {@code type}, with dependencies injected from this scope
      * @throws ServiceNotFoundException if no constructor can be satisfied
      */
     public <T> T createInstance(Class<T> type, Object... explicitArgs) {
         return Activator.createInstance(new Activator.ServiceResolver() {
-            @Override public <U> U getService(Class<U> t) { return ServiceProvider.this.getService(t); }
+            @Override public <U> U getService(Class<U> t) { return Scope.this.getService(t); }
         }, type, explicitArgs);
     }
 
+
     /**
-     * Indicates whether the provider could resolve the requested type if asked.
+     * Determines whether this scope can resolve the requested type.
      *
-     * <p>Returns {@code true} if an exact descriptor exists, a non-ambiguous assignable match exists,
-     * or the type is concrete and eligible for self-binding.</p>
+     * <p>Returns {@code true} if an exact descriptor exists, if there is an unambiguous assignable match,
+     * or if the type is concrete and can be constructed via self-binding.</p>
      *
-     * @param type The requested service type.
+     * @param type The service type.
      * @return {@code true} if resolution would succeed; otherwise {@code false}.
      */
     @Override
     public boolean canResolve(Class<?> type) {
         if (findDescriptorExact(type) != null) return true;
         if (findBestAssignableMatch(type) != null) return true;
-        return isConcrete(type); // eligible for self-binding
+        return isConcrete(type);
     }
 
     // ---------- internal helpers ----------
@@ -155,23 +154,21 @@ public class ServiceProvider implements Resolver {
      *
      * @param <T>  The service type.
      * @param type The requested type.
-     * @return The exact descriptor, or {@code null} if none.
+     * @return The exact matching descriptor, or {@code null} if none.
      */
     @SuppressWarnings("unchecked")
     private <T> ServiceDescriptor<T> findDescriptorExact(Class<T> type) {
         for (ServiceDescriptor<?> d : descriptors) {
-            if (d.serviceType.equals(type)) {
-                return (ServiceDescriptor<T>) d;
-            }
+            if (d.serviceType.equals(type)) return (ServiceDescriptor<T>) d;
         }
         return null;
     }
 
     /**
-     * Determines whether a class is concrete (neither an interface nor abstract).
+     * Checks whether a type is self-bindable, i.e., concrete (not interface/abstract).
      *
-     * @param t The class to test.
-     * @return {@code true} if concrete; otherwise {@code false}.
+     * @param t The type to check.
+     * @return {@code true} if the type is concrete; otherwise {@code false}.
      */
     private boolean isConcrete(Class<?> t) {
         int m = t.getModifiers();
@@ -179,70 +176,60 @@ public class ServiceProvider implements Resolver {
     }
 
     /**
-     * Lightweight container representing an assignable candidate during matching.
+     * Lightweight container for a candidate match during assignable lookup.
      *
      * @param <T> The service type.
      */
     private static final class Match<T> {
         final ServiceDescriptor<T> descriptor;
-        final Class<?> produced; // the concrete/known type it will produce
+        final Class<?> produced;
         Match(ServiceDescriptor<T> d, Class<?> produced) { this.descriptor = d; this.produced = produced; }
     }
 
     /**
-     * Finds the best descriptor whose produced type is assignable to {@code paramType}.
+     * Finds the best assignable match for the requested type among all descriptors.
      *
-     * <p><strong>Produced type rules</strong> (no side effects):</p>
-     * <ul>
-     *   <li>If an {@code instance} is present, use {@code instance.getClass()}.</li>
-     *   <li>Else if {@code implType} is present, use it.</li>
-     *   <li>Else (supplier-only with unknown type), skip to avoid invoking suppliers.</li>
-     * </ul>
-     *
-     * <p>When multiple candidates exist, they are sorted so the most specific type (nearest subclass)
-     * comes first. If the top two candidates are unrelated (neither assignable from the other),
-     * the match is ambiguous and an exception is thrown.</p>
+     * <p>A descriptor is a candidate if the type it <em>produces</em> (instance class or implementation class)
+     * is assignable to {@code paramType}. When multiple candidates exist, they are sorted so that the most
+     * specific type comes first (i.e., if A is assignable from B, B wins). If the top two candidates are
+     * unrelated (neither assignable from the other), the match is ambiguous and an exception is thrown.</p>
      *
      * @param <T>       The requested service type.
      * @param paramType The requested class.
-     * @return The best matching candidate, or {@code null} if none.
-     * @throws IllegalStateException if ambiguity is detected among unrelated candidates.
+     * @return The best {@link Match}, or {@code null} if none.
+     * @throws IllegalStateException if multiple unrelated candidates are found.
      */
     @SuppressWarnings("unchecked")
     private <T> Match<T> findBestAssignableMatch(Class<T> paramType) {
         List<Match<T>> candidates = new ArrayList<>();
-
         for (ServiceDescriptor<?> d : descriptors) {
             Class<?> produced = producedType(d);
-            if (produced == null) continue; // supplier-only with unknown type; skip to avoid constructing
+            if (produced == null) continue;
             if (paramType.isAssignableFrom(produced)) {
                 candidates.add(new Match<>((ServiceDescriptor<T>) d, produced));
             }
         }
-
         if (candidates.isEmpty()) return null;
         if (candidates.size() == 1) return candidates.get(0);
 
-        // Prefer the most specific produced type (i.e., the one that is assignable to all others)
+        // Prefer the most specific (deepest) type
         candidates.sort((a, b) -> {
             Class<?> A = a.produced, B = b.produced;
             if (A == B) return 0;
-            if (A.isAssignableFrom(B)) return 1;   // B is more specific than A
-            if (B.isAssignableFrom(A)) return -1;  // A is more specific than B
-            // Unrelated classes: keep stable but produce an ambiguity error below.
-            return 0;
+            if (A.isAssignableFrom(B)) return 1;   // B is more specific
+            if (B.isAssignableFrom(A)) return -1;  // A is more specific
+            return 0; // unrelated
         });
 
-        // After sorting, check for ambiguity among top two if neither is subtype of the other
         Class<?> top = candidates.get(0).produced;
         Class<?> second = candidates.get(1).produced;
         boolean ambiguous = !(top.isAssignableFrom(second) || second.isAssignableFrom(top));
         if (ambiguous) {
             StringBuilder sb = new StringBuilder("Ambiguous assignment for ")
                     .append(paramType.getName()).append(". Candidates produce: ");
-            for (Match<T> m : candidates) sb.append(m.produced.getName()).append(", ");
+            for (Match<T> mm : candidates) sb.append(mm.produced.getName()).append(", ");
             sb.setLength(sb.length() - 2);
-            sb.append(". Consider changing the parameter to the abstraction or registering a more specific mapping.");
+            sb.append(".");
             throw new IllegalStateException(sb.toString());
         }
 
@@ -250,11 +237,11 @@ public class ServiceProvider implements Resolver {
     }
 
     /**
-     * Returns the class this descriptor will produce <em>without</em> creating instances.
+     * Determines the runtime type a descriptor will produce for matching purposes:
      * <ul>
-     *   <li>If {@code instance} is present, returns {@code instance.getClass()}.</li>
-     *   <li>Else if {@code implType} is present, returns it.</li>
-     *   <li>Else (supplier-only with unknown type), returns {@code null}.</li>
+     *   <li>If {@code instance} is present → {@code instance.getClass()}</li>
+     *   <li>Else if {@code implType} is present → {@code implType}</li>
+     *   <li>Else → {@code null}</li>
      * </ul>
      *
      * @param d The descriptor to inspect.
@@ -281,11 +268,12 @@ public class ServiceProvider implements Resolver {
     private <T> T resolveFromDescriptor(ServiceDescriptor<T> d, Resolver resolver) {
         switch (d.lifetime) {
             case SINGLETON:
-                return (T) singletonCache.computeIfAbsent(d.serviceType, x -> createFromDescriptor(d, resolver));
+                return (T) singletonCache.computeIfAbsent(d.serviceType, x -> createFromDescriptor(d, resolver)); 
+            case SCOPED:
+                return (T) scopedCache.computeIfAbsent(d.serviceType, x -> createFromDescriptor(d, resolver));
             case TRANSIENT:
                 return createFromDescriptor(d, resolver);
-            case SCOPED:
-                throw new IllegalStateException("Scoped service requested from root provider: " + d.serviceType);
+
             default:
                 throw new IllegalStateException("Unknown lifetime");
         }
@@ -310,5 +298,23 @@ public class ServiceProvider implements Resolver {
         @SuppressWarnings("unchecked")
         Class<T> impl = (Class<T>) d.implType;
         return ConstructorFactory.createWithInjection(impl, resolver, null);
+    }
+
+    /**
+     * Closes the scope and disposes of any {@link AutoCloseable} instances held in the scoped cache.
+     * <p>
+     * Each closeable is closed in an independent try/catch; exceptions are ignored to ensure all
+     * closeables get a chance to run. The scoped cache is cleared afterward.
+     * </p>
+     */
+    @Override
+    public void close() {
+        for (Object o : scopedCache.values()) {
+            if (o instanceof AutoCloseable) {
+                AutoCloseable c = (AutoCloseable) o;
+                try { c.close(); } catch (Exception ignored) {}
+            }
+        }
+        scopedCache.clear();
     }
 }

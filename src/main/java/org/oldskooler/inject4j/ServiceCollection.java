@@ -1,4 +1,4 @@
-package org.oldskooler.javadi;
+package org.oldskooler.inject4j;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;

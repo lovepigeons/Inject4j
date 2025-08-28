@@ -1,4 +1,4 @@
-package org.oldskooler.javadi;
+package org.oldskooler.inject4j;
 
 /**
  * Thrown when a requested service cannot be resolved by the DI container.

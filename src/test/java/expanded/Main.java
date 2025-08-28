@@ -1,8 +1,7 @@
 package expanded;
 
-import org.oldskooler.javadi.Scope;
-import org.oldskooler.javadi.ServiceCollection;
-import org.oldskooler.javadi.ServiceProvider;
+import org.oldskooler.inject4j.ServiceCollection;
+import org.oldskooler.inject4j.ServiceProvider;
 
 
 public class Main {
@@ -10,7 +9,7 @@ public class Main {
         ServiceCollection services = new ServiceCollection();
 
         // Register leaf deps
-        services.addSingleton(Config.class, new Config("bar"));         // instance
+        services.addSingleton(Config.class, () -> new Config("bar"));         // instance
         services.addSingleton(Clock.class, SystemClock.class);            // class → singleton
 
         // Register higher-level types

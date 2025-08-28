@@ -1,8 +1,8 @@
 package simple;
 
-import org.oldskooler.javadi.Scope;
-import org.oldskooler.javadi.ServiceCollection;
-import org.oldskooler.javadi.ServiceProvider;
+import org.oldskooler.inject4j.Scope;
+import org.oldskooler.inject4j.ServiceCollection;
+import org.oldskooler.inject4j.ServiceProvider;
 
 public class Main {
     public static void main(String[] args) {

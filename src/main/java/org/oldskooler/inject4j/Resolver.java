@@ -1,6 +1,4 @@
-package org.oldskooler.javadi;
-
-import java.util.Deque;
+package org.oldskooler.inject4j;
 
 interface Resolver {
     <T> T getService(Class<T> type);

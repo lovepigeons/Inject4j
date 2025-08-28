@@ -1,4 +1,4 @@
-# java-di
+# Inject4j
 
 A small, lightweight and simple dependency injection (DI) container for Java. It's designed to work almost the same way as Microsoft's [ServiceCollection](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.dependencyinjection.servicecollection) implementation., so if you've used DI in .NET it should feel very familiar.
 
@@ -6,7 +6,7 @@ With it, you can register services as singletons, scoped, or transient, and then
 
 **Built and tested against Java 1.8**
 
-[![](https://jitpack.io/v/Quackster/java-di.svg)](https://jitpack.io/#Quackster/java-di)
+[![](https://jitpack.io/v/Quackster/Inject4j.svg)](https://jitpack.io/#Quackster/Inject4j)
 
 ---
 
@@ -49,7 +49,7 @@ With it, you can register services as singletons, scoped, or transient, and then
 
 ### Gradle
 
-Add the [JitPack](https://jitpack.io/#Quackster/java-di) repository:
+Add the [JitPack](https://jitpack.io/#Quackster/Inject4j) repository:
 
 ```groovy
 repositories {
@@ -61,13 +61,13 @@ Then add the dependency:
 
 ```groovy
 dependencies {
-    implementation 'com.github.Quackster:java-di:v0.1.0'
+    implementation 'com.github.Quackster:Inject4j:v0.1.0'
 }
 ```
 
 ### Maven
 
-Add the [JitPack](https://jitpack.io/#Quackster/java-di) repository:
+Add the [JitPack](https://jitpack.io/#Quackster/Inject4j) repository:
 
 ```xml
 <repositories>
@@ -84,7 +84,7 @@ Then add the dependency:
 <dependencies>
     <dependency>
         <groupId>com.github.Quackster</groupId>
-        <artifactId>java-di</artifactId>
+        <artifactId>Inject4j</artifactId>
         <version>v0.1.0</version>
     </dependency>
 </dependencies>
@@ -320,7 +320,7 @@ public class ReportController {
 **A:** The library is built and tested against the latest JDK LTS (currently Java 21).
 
 ### Q: How does this compare to Spring's dependency injection?
-**A:** This is a much lighter alternative focused on simplicity. While Spring offers extensive features and integrations, java-di provides just the core DI functionality with a clean, easy-to-use API similar to .NET's ServiceCollection.
+**A:** This is a much lighter alternative focused on simplicity. While Spring offers extensive features and integrations, Inject4j provides just the core DI functionality with a clean, easy-to-use API similar to .NET's ServiceCollection.
 
 ### Q: Can I register factory methods for services?
 **A:** Yes, you can use lambda expressions when registering services. For example: `services.addSingleton(Logger.class, () -> Logger.getLogger("demo"));`
