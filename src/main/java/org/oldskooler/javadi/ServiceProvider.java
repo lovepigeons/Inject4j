@@ -282,10 +282,10 @@ public class ServiceProvider implements Resolver {
         switch (d.lifetime) {
             case SINGLETON:
                 return (T) singletonCache.computeIfAbsent(d.serviceType, x -> createFromDescriptor(d, resolver));
-            case SCOPED:
-                return (T) scopedCache.computeIfAbsent(d.serviceType, x -> createFromDescriptor(d));
             case TRANSIENT:
                 return createFromDescriptor(d, resolver);
+            case SCOPED:
+                throw new IllegalStateException("Scoped service requested from root provider: " + d.serviceType);
             default:
                 throw new IllegalStateException("Unknown lifetime");
         }
