@@ -4,7 +4,7 @@ A small, lightweight and simple dependency injection (DI) container for Java. It
 
 With it, you can register services as singletons, scoped, or transient, and then resolve them using constructor injection.
 
-**Built and tested against the latest JDK LTS (currently Java 21).**
+**Built and tested against Java 1.8**
 
 [![](https://jitpack.io/v/Quackster/java-di.svg)](https://jitpack.io/#Quackster/java-di)
 
@@ -61,7 +61,7 @@ Then add the dependency:
 
 ```groovy
 dependencies {
-    implementation 'com.github.Quackster:java-di:v1.0.0'
+    implementation 'com.github.Quackster:java-di:v1.0.1'
 }
 ```
 
@@ -85,7 +85,7 @@ Then add the dependency:
     <dependency>
         <groupId>com.github.Quackster</groupId>
         <artifactId>java-di</artifactId>
-        <version>v1.0.0</version>
+        <version>v1.0.1</version>
     </dependency>
 </dependencies>
 ```
