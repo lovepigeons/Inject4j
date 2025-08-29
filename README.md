@@ -6,7 +6,7 @@ With it, you can register services as singletons, scoped, or transient, and then
 
 **Built and tested against Java 1.8**
 
-[![](https://jitpack.io/v/Quackster/Inject4j.svg)](https://jitpack.io/#Quackster/Inject4j)
+[![](https://jitpack.io/v/lovepigeons/Inject4j.svg)](https://jitpack.io/#lovepigeons/Inject4j)
 
 ---
 
@@ -49,7 +49,7 @@ With it, you can register services as singletons, scoped, or transient, and then
 
 ### Gradle
 
-Add the [JitPack](https://jitpack.io/#Quackster/Inject4j) repository:
+Add the [JitPack](https://jitpack.io/#lovepigeons/Inject4j) repository:
 
 ```groovy
 repositories {
@@ -61,13 +61,13 @@ Then add the dependency:
 
 ```groovy
 dependencies {
-    implementation 'com.github.Quackster:Inject4j:v0.1.0'
+    implementation 'com.github.lovepigeons:Inject4j:v0.1.0'
 }
 ```
 
 ### Maven
 
-Add the [JitPack](https://jitpack.io/#Quackster/Inject4j) repository:
+Add the [JitPack](https://jitpack.io/#lovepigeons/Inject4j) repository:
 
 ```xml
 <repositories>
@@ -83,7 +83,7 @@ Then add the dependency:
 ```xml
 <dependencies>
     <dependency>
-        <groupId>com.github.Quackster</groupId>
+        <groupId>com.github.lovepigeons</groupId>
         <artifactId>Inject4j</artifactId>
         <version>v0.1.0</version>
     </dependency>
