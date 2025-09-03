@@ -6,7 +6,7 @@ With it, you can register services as singletons, scoped, or transient, and then
 
 **Built and tested against Java 1.8**
 
-[![](https://jitpack.io/v/lovepigeons/Inject4j.svg)](https://jitpack.io/#lovepigeons/Inject4j)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 ---
 
@@ -342,3 +342,9 @@ public class ReportController {
 
 ### Q: Is constructor injection the only supported injection method?
 **A:** Yes, currently the library only supports constructor injection, which is generally considered the best practice for dependency injection as it ensures all dependencies are provided at object creation time.
+
+## License
+
+Inject4j is released under the Apache 2.0 license.
+
+See the LICENSE file for the full text.
