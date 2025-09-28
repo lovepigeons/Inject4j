@@ -280,8 +280,19 @@ public class ServiceProvider implements Resolver {
     @SuppressWarnings("unchecked")
     private <T> T resolveFromDescriptor(ServiceDescriptor<T> d, Resolver resolver) {
         switch (d.lifetime) {
-            case SINGLETON:
-                return (T) singletonCache.computeIfAbsent(d.serviceType, x -> createFromDescriptor(d, resolver));
+            case SINGLETON: {
+                T type = null;
+
+                if (!singletonCache.containsKey(d.serviceType)) {
+                    type = createFromDescriptor(d, resolver);
+                    singletonCache.putIfAbsent(d.serviceType, type);
+                }
+                else {
+                    type = (T) singletonCache.get(d.serviceType);
+                }
+
+                return type;
+            }
             case TRANSIENT:
                 return createFromDescriptor(d, resolver);
             case SCOPED:
